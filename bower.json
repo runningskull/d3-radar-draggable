@@ -1,0 +1,16 @@
+{
+  "name": "radar",
+  "version": "0.0.0",
+  "authors": [
+    "J.R. Patten <jr@juanpatten.com>"
+  ],
+  "license": "MIT",
+  "private": true,
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ]
+}
