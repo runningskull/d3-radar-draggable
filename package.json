@@ -11,6 +11,10 @@
   "devDependencies": {
     "grunt": "~0.4.1",
     "browserify": "~2.34.1",
-    "grunt-browserify": "~1.2.9"
+    "grunt-browserify": "~1.2.9",
+    "grunt-contrib-watch": "~0.5.3"
+  },
+  "dependencies": {
+    "underscore": "~1.5.2"
   }
 }

@@ -1,0 +1,47 @@
+<!doctype html>
+<html>
+    <head>
+        <meta http-equiv="content-type" content="text/html; charset=UTF8">
+        <style>
+            body { background: #f5f4f2; }
+            #board {
+                background: #fff;
+                float: left;
+                margin: 20px 0 0 20px;
+                box-shadow: 0 6px 18px rgba(0,0,0, 0.04);
+                border: 1px solid #ecebe8;
+                border-radius: 3px;
+            }
+
+            #controls {
+                position:       fixed;
+                left:           720px;
+                border-left:    1px solid #ddd;
+                height:         100%;
+                padding:        30px;
+            }
+
+            circle, .line {
+                stroke: '#333';
+                fill: none;
+                stroke-width: 2px;
+            }
+
+            circle {
+                cursor: pointer;
+            }
+        </style>
+    </head>
+
+    <body>
+        <div id="board">
+        </div>
+
+        <div id="controls">
+        </div>
+
+        <script src="//ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
+        <script src="//cdnjs.cloudflare.com/ajax/libs/d3/3.3.3/d3.js"></script>
+        <script src="/build/radar.js"></script>
+    </body>
+</html>

@@ -4,6 +4,7 @@
   "authors": [
     "J.R. Patten <jr@juanpatten.com>"
   ],
+  "main": "js/radar.js",
   "license": "MIT",
   "private": true,
   "ignore": [
