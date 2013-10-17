@@ -21,14 +21,33 @@
                 padding:        30px;
             }
 
-            circle, .line {
-                stroke: '#333';
-                fill: none;
-                stroke-width: 2px;
+            .handle, .indicator {
+                fill: #1f77b4;
+                cursor: pointer;
             }
 
-            circle {
-                cursor: pointer;
+            .handle {
+                fill-opacity: 0.9;
+            }
+
+            .handle.hover {
+                transition-property: fill-opacity;
+                transition-duration: 0.25s;
+                fill-opacity: 0.5;
+            }
+
+            .indicator {
+                fill-opacity: 0;
+                stroke-opacity: 0;
+            }
+
+            .indicator.hover {
+                transition-property: fill-opacity, stroke-opacity;
+                transition-duration: 0.25s;
+                fill-opacity: 0.12;
+                stroke: #1f77b4;
+                stroke-opacity: 0.2;
+                stroke-width: 1px;
             }
         </style>
     </head>

@@ -3,10 +3,10 @@ var _ = require('underscore')
 module.exports = {
   draw: function(id, d, options){
     var cfg = _.extend({
-       radius: 5
+       radius: 7
       ,w: 600
       ,h: 600
-      ,scale: .95
+      ,scale: .9
       ,scaleLegend: 1
       ,levels: 3
       ,maxValue: 0
@@ -25,7 +25,7 @@ module.exports = {
 
     var axis = g.selectAll(".axis").data(allAxis).enter().append("g").attr("class", "axis");
     var dataValues = []
-      , handles, path
+      , handles, path, indicators
 
     var line = d3.svg.line().interpolate('cardinal-closed')
 
@@ -54,22 +54,44 @@ module.exports = {
     }
 
     function initHandles() {
-      handles = g.selectAll(".nodes").data(d[0]).enter()
-                  .append("svg:circle")
-                    .attr('r', cfg.radius)
-                    .attr("alt", function(j){return Math.max(j.value, 0)})
-                    .attr("cx", function(j, i){
-                      return horizontal(i, cfg.w/2, (Math.max(j.value, 0)/cfg.maxValue)*cfg.scale);
-                    })
-                    .attr("cy", function(j, i){
-                      return vertical(i, cfg.h/2, (Math.max(j.value, 0)/cfg.maxValue)*cfg.scale);
-                    })
-                    .attr("data-id", function(j){return j.axis})
-                    .style("fill", cfg.color(0)).style("fill-opacity", .9)
-                    .call(d3.behavior.drag().on('drag', move))
+      var _g = g.selectAll('.nodes').data(d[0]).enter()
+                  .append('g')
+                  .attr('class', 'handle-group')
+                  .on('mouseover', function() {
+                    d3.select(this)
+                        .select('.handle')
+                          .classed('hover', true)
+                            .transition().duration(600).ease('elastic')
+                              .attr('r', cfg.radius*1.75) })
+                  .on('mouseout', function() {
+                    d3.select(this)
+                        .select('.handle')
+                          .classed('hover', false)
+                          .transition().duration(500).ease('elastic')
+                            .attr('r', cfg.radius) })
 
-        handles.append("svg:title").text(function(j){return Math.max(j.value, 0)})
-        return handles
+
+      handles = _g
+        .append("svg:circle")
+          .attr('r', cfg.radius)
+          .attr("alt", function(j){return Math.max(j.value, 0)})
+          .attr("cx", cx).attr("cy", cy)
+          .attr("data-id", function(j){return j.axis})
+          .attr('class', 'handle')
+          .on('mouseover', function(){ console.log(d3.select(this));d3.select(this).transition().attr('r', cfg.radius*2) })
+
+      indicators = _g
+        .append('svg:circle')
+          .attr('r', cfg.radius*4)
+          .attr("cx", cx).attr("cy", cy)
+          .attr('class', 'indicator')
+          .on('mouseover', hoverOn)
+          .on('mouseout', hoverOff)
+
+      indicators.call(d3.behavior.drag().on('drag', move))
+
+      handles.append("svg:title").text(function(j){return Math.max(j.value, 0)})
+      return handles
     }
 
     function drawPath() {
@@ -84,13 +106,8 @@ module.exports = {
     }
 
     function drawHandles() {
-      handles
-        .attr("cx", function(j, i){
-          return horizontal(i, cfg.w/2, (Math.max(j.value, 0)/cfg.maxValue)*cfg.scale);
-        })
-        .attr("cy", function(j, i){
-          return vertical(i, cfg.h/2, (Math.max(j.value, 0)/cfg.maxValue)*cfg.scale);
-        })
+      handles.attr("cx", cx).attr("cy", cy)
+      indicators.attr('cx', cx).attr('cy', cy)
     }
 
     function drawAxes() {
@@ -137,6 +154,8 @@ module.exports = {
     //~~ Drag/Drop
 
     function move() {
+      if (!d3.event) return;
+
       this.parentNode.appendChild(this);
       var dragTarget = d3.select(this);
 
@@ -144,6 +163,8 @@ module.exports = {
       var oldX = parseFloat(dragTarget.attr("cx")) - 300;
       var oldY = 300 - parseFloat(dragTarget.attr("cy"));
       var newY = 0, newX = 0, newValue = 0;
+
+      if (Math.abs(oldX - 0) < 1e-5) oldX = 0;
 
       if(oldX == 0) {
         newY = oldY - d3.event.dy;        
@@ -157,8 +178,11 @@ module.exports = {
         newValue = ratio * oldData.value; 
       }
 
-      if (newValue < 0 || newValue > cfg.maxValue)
-        return d3.event.preventDefault(), d3.event.stopPropagation();
+      if (newValue < 0 || newValue > cfg.maxValue) {
+        d3.event.preventDefault && d3.event.preventDefault()
+        d3.event.stopPropagation && d3.event.stopPropagation()
+        return
+      }
       
       dragTarget
           .attr("cx", function(){return newX + 300 ;})
@@ -171,7 +195,6 @@ module.exports = {
         var shave = (newValue - oldValue) / (d[0].length-1)
         if (i != oldData.order) d[0][i].value = d[0][i].value - shave
       })
-      console.log(_.reduce(d[0], function(memo,x){return memo+x.value}, 0))
 
       recalculatePoints();
       drawPath()
@@ -181,14 +204,14 @@ module.exports = {
     function recalculatePoints() {
       g.selectAll(".nodes")
         .data(d[0], function(j, i){
-          dataValues[i] = [
-            horizontal(i, cfg.w/2, (parseFloat(Math.max(j.value, 0))/cfg.maxValue)*cfg.scale),
-            vertical(i, cfg.h/2, (parseFloat(Math.max(j.value, 0))/cfg.maxValue)*cfg.scale)
-          ]
+          dataValues[i] = [cx(j,i), cy(j,i)]
         });
 
       dataValues[d[0].length] = dataValues[0]
     }
+
+    function hoverOn() { d3.select(this).classed('hover', true); return true }
+    function hoverOff() { d3.select(this).classed('hover', false); return true }
 
 
 
@@ -202,5 +225,9 @@ module.exports = {
     }
     function horizontal(i, range, scale){ return _pos(i, range, scale, Math.sin); }
     function vertical(i, range, scale){ return _pos(i, range, scale, Math.cos); }
+
+    function cx(j, i){ return horizontal(i, cfg.w/2, (Math.max(j.value, 0)/cfg.maxValue)*cfg.scale); }
+    function cy(j, i){ return vertical(i, cfg.h/2, (Math.max(j.value, 0)/cfg.maxValue)*cfg.scale); }
+
   }
 };
