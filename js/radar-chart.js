@@ -33,11 +33,10 @@ module.exports = {
     drawRings()
     recalculatePoints()
 
+    path = initPath()
     handles = initHandles()
 
-    path = initPath()
     drawPath()
-
     drawHandles()
 
 
