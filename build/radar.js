@@ -192,14 +192,30 @@ module.exports = {
       var oldValue = d[0][oldData.order].value
       d[0][oldData.order].value=newValue;
 
-      _.each(d[0], function(x, i) {
-        var shave = (newValue - oldValue) / (d[0].length-1)
-        if (i != oldData.order) d[0][i].value = d[0][i].value - shave
-      })
-
+      maintainArea()
+  
       recalculatePoints();
       drawPath()
       drawHandles()
+
+      console.log(_.reduce(d[0], function(m,x,i){ return m+x.value }, 0))
+
+      function maintainArea() {
+        var shaveVal = (newValue - oldValue) / (d[0].length-1)
+          , shaved = _.map(d[0], function(x){ return [x, x.value - shaveVal] })
+          , bads = _.filter(shaved, function(x){ return x[1] < 0 || x[1] > cfg.maxValue })
+          , toShave
+
+        if (bads.length) {
+          toShave = _.difference(d[0], _.map(bads, _.first))
+          shaveVal = (newValue - oldValue) / (toShave.length - 1)
+        }
+
+        _.each(toShave || d[0], function(x, i) {
+          if ((x.order != oldData.order))// && (!~ dontMove.indexOf[x]))
+            x.value -= shaveVal
+        })
+      }
     }
 
     function recalculatePoints() {
@@ -227,6 +243,11 @@ module.exports = {
     function horizontal(i, range, scale){ return _pos(i, range, scale, Math.sin); }
     function vertical(i, range, scale){ return _pos(i, range, scale, Math.cos); }
 
+    function lte(x,y) { return x <= y }
+    function gte(x,y) { return x >= y }
+    function lt(x,y) { return x < y }
+    function gt(x,y) { return x > y }
+
     function cx(j, i){ return horizontal(i, cfg.w/2, (Math.max(j.value, 0)/cfg.maxValue)*cfg.scale); }
     function cy(j, i){ return vertical(i, cfg.h/2, (Math.max(j.value, 0)/cfg.maxValue)*cfg.scale); }
 
@@ -238,13 +259,13 @@ var RadarChart = require('./radar-chart')
 
 var d = [
   [
-    {axis: "strength", value: 4, order:0}, 
-    {axis: "intelligence", value: 1, order:1}, 
-    {axis: "dexterity", value: 4, order:2},  
-    {axis: "luck", value: 10, order:3},
-    {axis: "azole", value: 20, order:4},
-    {axis: "shiner", value: 6, order: 5},
-    //{axis: "hund", value: 11, order: 6}
+    {axis: "strength", value: 4,        order:0}, 
+    {axis: "intelligence", value: 1,    order:1}, 
+    {axis: "dexterity", value: 4,       order:2},  
+    {axis: "luck", value: 10,           order:3},
+    {axis: "azole", value: 20,          order:4},
+    {axis: "shiner", value: 6,          order:5},
+    {axis: "hund", value: 9,            order:6}
   ]
 ]
 
