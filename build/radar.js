@@ -26,16 +26,19 @@ module.exports = {
 
     var axis = g.selectAll(".axis").data(allAxis).enter().append("g").attr("class", "axis");
     var dataValues = []
-      , poly, handles
+      , handles, path
+
+    var line = d3.svg.line().interpolate('cardinal-closed')
 
     drawAxes()
     drawRings()
     recalculatePoints()
 
-    poly = initPoly()
-    drawPoly()
-
     handles = initHandles()
+
+    path = initPath()
+    drawPath()
+
     drawHandles()
 
 
@@ -44,14 +47,12 @@ module.exports = {
     //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     //~~ Draw Things
     
-    function initPoly() {
-      return g.selectAll(".area")
-               .data([dataValues]).enter()
-                 .append("polygon")
-                   .style("stroke-width", "2px")
-                   .style("stroke", cfg.color(0))
-                   .style("fill", function(j, i){return cfg.color(0)})
-                   .style("fill-opacity", cfg.opacityArea)
+    function initPath() {
+      return g.append('path')
+                //.style('stroke', '#f00')
+                //.style('stroke-width', '5px')
+                 .style("fill", function(j, i){return cfg.color(0)})
+                 .style("fill-opacity", cfg.opacityArea)
     }
 
     function initHandles() {
@@ -73,14 +74,15 @@ module.exports = {
         return handles
     }
 
-    function drawPoly() {
-      poly.attr("points",function(d) {
-        var str="";
-        for(var pti=0;pti<d.length;pti++){
-          str=str+d[pti][0]+","+d[pti][1]+" ";
-        }
-        return str;
-      })
+    function drawPath() {
+      var xs = _.map(handles[0], function(x){ return parseFloat(x.attributes.cx.nodeValue) })
+        , ys = _.map(handles[0], function(x){ return parseFloat(x.attributes.cy.nodeValue) })
+        , zipped = _.zip(xs, ys)
+
+      g.select('path')
+        .datum(zipped)
+        //.datum(zipped.concat([zipped[0]]))
+        .attr('d', line)
     }
 
     function drawHandles() {
@@ -156,6 +158,9 @@ module.exports = {
         var ratio = newX / oldX;
         newValue = ratio * oldData.value; 
       }
+
+      if (newValue < 0 || newValue > cfg.maxValue)
+        return d3.event.preventDefault(), d3.event.stopPropagation();
       
       dragTarget
           .attr("cx", function(){return newX + 300 ;})
@@ -164,11 +169,14 @@ module.exports = {
       var oldValue = d[0][oldData.order].value
       d[0][oldData.order].value=newValue;
 
-      var shave = (newValue - oldValue) / (d[0].length-1)
-      _.each(d[0], function(x, i) { if (i != oldData.order) d[0][i].value = d[0][i].value - shave })
+      _.each(d[0], function(x, i) {
+        var shave = (newValue - oldValue) / (d[0].length-1)
+        if (i != oldData.order) d[0][i].value = d[0][i].value - shave
+      })
+      console.log(_.reduce(d[0], function(memo,x){return memo+x.value}, 0))
 
       recalculatePoints();
-      drawPoly();
+      drawPath()
       drawHandles()
     }
 
