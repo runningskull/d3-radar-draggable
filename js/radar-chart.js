@@ -25,13 +25,16 @@ module.exports = {
 
     var axis = g.selectAll(".axis").data(allAxis).enter().append("g").attr("class", "axis");
     var dataValues = []
-      , poly
+      , poly, handles
 
     drawAxes()
     drawRings()
     recalculatePoints()
+
     poly = initPoly()
     drawPoly()
+
+    handles = initHandles()
     drawHandles()
 
 
@@ -40,34 +43,53 @@ module.exports = {
     //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     //~~ Draw Things
     
-    function drawHandles() {
-      d.forEach(function(y, x){
-        g.selectAll(".nodes")
-          .data(y).enter()
-          .append("svg:circle")
-            .attr('r', cfg.radius)
-            .attr("alt", function(j){return Math.max(j.value, 0)})
-            .attr("cx", function(j, i){
-              //dataValues.push([
-                //horizontal(i, cfg.w/2, (parseFloat(Math.max(j.value, 0))/cfg.maxValue)*cfg.scale),
-                //vertical(i, cfg.h/2, (parseFloat(Math.max(j.value, 0))/cfg.maxValue)*cfg.scale)
-              //]);
-              return horizontal(i, cfg.w/2, (Math.max(j.value, 0)/cfg.maxValue)*cfg.scale);
-            })
-            .attr("cy", function(j, i){
-              return vertical(i, cfg.h/2, (Math.max(j.value, 0)/cfg.maxValue)*cfg.scale);
-            })
-            .attr("data-id", function(j){return j.axis})
-            .style("fill", cfg.color(0)).style("fill-opacity", .9)
-            .call(d3.behavior.drag().on('drag', move))
-            .append("svg:title")
-              .text(function(j){return Math.max(j.value, 0)})
+    function initPoly() {
+      return g.selectAll(".area")
+               .data([dataValues]).enter()
+                 .append("polygon")
+                   .style("stroke-width", "2px")
+                   .style("stroke", cfg.color(0))
+                   .style("fill", function(j, i){return cfg.color(0)})
+                   .style("fill-opacity", cfg.opacityArea)
+    }
 
-        //g.selectAll('.nodes')
-          //.data(y).enter()
-          //.append('svg:circle')
-          //.attr('r', cfg.radius + 8)
-      });
+    function initHandles() {
+      handles = g.selectAll(".nodes").data(d[0]).enter()
+                  .append("svg:circle")
+                    .attr('r', cfg.radius)
+                    .attr("alt", function(j){return Math.max(j.value, 0)})
+                    .attr("cx", function(j, i){
+                      return horizontal(i, cfg.w/2, (Math.max(j.value, 0)/cfg.maxValue)*cfg.scale);
+                    })
+                    .attr("cy", function(j, i){
+                      return vertical(i, cfg.h/2, (Math.max(j.value, 0)/cfg.maxValue)*cfg.scale);
+                    })
+                    .attr("data-id", function(j){return j.axis})
+                    .style("fill", cfg.color(0)).style("fill-opacity", .9)
+                    .call(d3.behavior.drag().on('drag', move))
+
+        handles.append("svg:title").text(function(j){return Math.max(j.value, 0)})
+        return handles
+    }
+
+    function drawPoly() {
+      poly.attr("points",function(d) {
+        var str="";
+        for(var pti=0;pti<d.length;pti++){
+          str=str+d[pti][0]+","+d[pti][1]+" ";
+        }
+        return str;
+      })
+    }
+
+    function drawHandles() {
+      handles
+        .attr("cx", function(j, i){
+          return horizontal(i, cfg.w/2, (Math.max(j.value, 0)/cfg.maxValue)*cfg.scale);
+        })
+        .attr("cy", function(j, i){
+          return vertical(i, cfg.h/2, (Math.max(j.value, 0)/cfg.maxValue)*cfg.scale);
+        })
     }
 
     function drawAxes() {
@@ -107,26 +129,6 @@ module.exports = {
           //.attr("y", function(d, i){return vertical(i, cfg.h / 2, cfg.scaleLegend);});
     }
 
-    function initPoly() {
-      return g.selectAll(".area")
-               .data([dataValues]).enter()
-                 .append("polygon")
-                   .style("stroke-width", "2px")
-                   .style("stroke", cfg.color(0))
-                   .style("fill", function(j, i){return cfg.color(0)})
-                   .style("fill-opacity", cfg.opacityArea)
-    }
-
-    function drawPoly() {
-      poly.attr("points",function(d) {
-        var str="";
-        for(var pti=0;pti<d.length;pti++){
-          str=str+d[pti][0]+","+d[pti][1]+" ";
-        }
-        return str;
-      })
-    }
-
 
 
 
@@ -157,10 +159,16 @@ module.exports = {
       dragTarget
           .attr("cx", function(){return newX + 300 ;})
           .attr("cy", function(){return 300 - newY;});
-      d[0][oldData.order].value=newValue;  
-      recalculatePoints();
 
+      var oldValue = d[0][oldData.order].value
+      d[0][oldData.order].value=newValue;
+
+      var shave = (newValue - oldValue) / (d[0].length-1)
+      _.each(d[0], function(x, i) { if (i != oldData.order) d[0][i].value = d[0][i].value - shave })
+
+      recalculatePoints();
       drawPoly();
+      drawHandles()
     }
 
     function recalculatePoints() {
