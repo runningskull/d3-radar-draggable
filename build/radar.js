@@ -1,5 +1,290 @@
 ;(function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);throw new Error("Cannot find module '"+o+"'")}var f=n[o]={exports:{}};t[o][0].call(f.exports,function(e){var n=t[o][1][e];return s(n?n:e)},f,f.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
+// d3.tip
+// Copyright (c) 2013 Justin Palmer
+//
+// Tooltips for d3.js SVG visualizations
+
+// Public - contructs a new tooltip
+//
+// Returns a tip
+module.exports = function() {
+  var direction = d3_tip_direction,
+      offset    = d3_tip_offset,
+      html      = d3_tip_html,
+      node      = initNode(),
+      svg       = null,
+      point     = null
+
+  function tip(vis) {
+    svg = getSVGNode(vis)
+    point = svg.createSVGPoint()
+    document.body.appendChild(node)
+  }
+
+  // Public - show the tooltip on the screen
+  //
+  // Returns a tip
+  tip.show = function() {
+    var content = html.apply(this, arguments),
+        poffset = offset.apply(this, arguments),
+        dir     = direction.apply(this, arguments),
+        nodel   = d3.select(node), i = 0,
+        coords
+
+    nodel.html(content)
+      .style({ opacity: 1, 'pointer-events': 'all' })
+
+    while(i--) nodel.classed(directions[i], false)
+    coords = direction_callbacks.get(dir).apply(this)
+    nodel.classed(dir, true).style({
+      top: (coords.top +  poffset[0]) + 'px',
+      left: (coords.left + poffset[1]) + 'px'
+    })
+
+    return tip
+  }
+
+  // Public - hide the tooltip
+  //
+  // Returns a tip
+  tip.hide = function() {
+    nodel = d3.select(node)
+    nodel.style({ opacity: 0, 'pointer-events': 'none' })
+    return tip
+  }
+
+  // Public: Proxy attr calls to the d3 tip container.  Sets or gets attribute value.
+  //
+  // n - name of the attribute
+  // v - value of the attribute
+  //
+  // Returns tip or attribute value
+  tip.attr = function(n, v) {
+    if (arguments.length < 2 && typeof n === 'string') {
+      return d3.select(node).attr(n)
+    } else {
+      var args =  Array.prototype.slice.call(arguments)
+      d3.selection.prototype.attr.apply(d3.select(node), args)
+    }
+
+    return tip
+  }
+
+  // Public: Proxy style calls to the d3 tip container.  Sets or gets a style value.
+  //
+  // n - name of the property
+  // v - value of the property
+  //
+  // Returns tip or style property value
+  tip.style = function(n, v) {
+    if (arguments.length < 2 && typeof n === 'string') {
+      return d3.select(node).style(n)
+    } else {
+      var args =  Array.prototype.slice.call(arguments)
+      d3.selection.prototype.style.apply(d3.select(node), args)
+    }
+
+    return tip
+  }
+
+  // Public: Set or get the direction of the tooltip
+  //
+  // v - One of n(north), s(south), e(east), or w(west), nw(northwest),
+  //     sw(southwest), ne(northeast) or se(southeast)
+  //
+  // Returns tip or direction
+  tip.direction = function(v) {
+    if (!arguments.length) return direction
+    direction = v == null ? v : d3.functor(v)
+
+    return tip
+  }
+
+  // Public: Sets or gets the offset of the tip
+  //
+  // v - Array of [x, y] offset
+  //
+  // Returns offset or
+  tip.offset = function(v) {
+    if (!arguments.length) return offset
+    offset = v == null ? v : d3.functor(v)
+
+    return tip
+  }
+
+  // Public: sets or gets the html value of the tooltip
+  //
+  // v - String value of the tip
+  //
+  // Returns html value or tip
+  tip.html = function(v) {
+    if (!arguments.length) return html
+    html = v == null ? v : d3.functor(v)
+
+    return tip
+  }
+
+  function d3_tip_direction() { return 'n' }
+  function d3_tip_offset() { return [0, 0] }
+  function d3_tip_html() { return ' ' }
+
+  var direction_callbacks = d3.map({
+    n:  direction_n,
+    s:  direction_s,
+    e:  direction_e,
+    w:  direction_w,
+    nw: direction_nw,
+    ne: direction_ne,
+    sw: direction_sw,
+    se: direction_se
+  }),
+
+  directions = direction_callbacks.keys()
+
+  function direction_n() {
+    var bbox = getScreenBBox()
+    return {
+      top:  bbox.n.y - node.offsetHeight,
+      left: bbox.n.x - node.offsetWidth / 2
+    }
+  }
+
+  function direction_s() {
+    var bbox = getScreenBBox()
+    return {
+      top:  bbox.s.y,
+      left: bbox.s.x - node.offsetWidth / 2
+    }
+  }
+
+  function direction_e() {
+    var bbox = getScreenBBox()
+    return {
+      top:  bbox.e.y - node.offsetHeight / 2,
+      left: bbox.e.x
+    }
+  }
+
+  function direction_w() {
+    var bbox = getScreenBBox()
+    return {
+      top:  bbox.w.y - node.offsetHeight / 2,
+      left: bbox.w.x - node.offsetWidth
+    }
+  }
+
+  function direction_nw() {
+    var bbox = getScreenBBox()
+    return {
+      top:  bbox.nw.y - node.offsetHeight,
+      left: bbox.nw.x - node.offsetWidth
+    }
+  }
+
+  function direction_ne() {
+    var bbox = getScreenBBox()
+    return {
+      top:  bbox.ne.y - node.offsetHeight,
+      left: bbox.ne.x
+    }
+  }
+
+  function direction_sw() {
+    var bbox = getScreenBBox()
+    return {
+      top:  bbox.sw.y,
+      left: bbox.sw.x - node.offsetWidth
+    }
+  }
+
+  function direction_se() {
+    var bbox = getScreenBBox()
+    return {
+      top:  bbox.se.y,
+      left: bbox.e.x
+    }
+  }
+
+  function initNode() {
+    var node = d3.select(document.createElement('div'))
+    node.style({
+      position: 'absolute',
+      opacity: 0,
+      pointerEvents: 'none',
+      boxSizing: 'border-box'
+    })
+
+    return node.node()
+  }
+
+  function getSVGNode(el) {
+    el = el.node()
+    if(el.tagName.toLowerCase() == 'svg')
+      return el
+
+    return el.ownerSVGElement
+  }
+
+  // Private - gets the screen coordinates of a shape
+  //
+  // Given a shape on the screen, will return an SVGPoint for the directions
+  // n(north), s(south), e(east), w(west), ne(northeast), se(southeast), nw(northwest),
+  // sw(southwest).
+  //
+  //    +-+-+
+  //    |   |
+  //    +   +
+  //    |   |
+  //    +-+-+
+  //
+  // Returns an Object {n, s, e, w, nw, sw, ne, se}
+  function getScreenBBox() {
+    var target     = d3.event.target,
+        bbox       = {},
+        matrix     = target.getScreenCTM(),
+        tbbox      = target.getBBox(),
+        width      = tbbox.width,
+        height     = tbbox.height,
+        x          = tbbox.x,
+        y          = tbbox.y,
+        scrollTop  = document.body.scrollTop,
+        scrollLeft = document.body.scrollLeft
+
+    if(document.documentElement && document.documentElement.scrollTop) {
+      scrollTop  = document.documentElement.scrollTop
+      scrollLeft = document.documentElement.scrollLeft
+    }
+
+    point.x = x + scrollLeft
+    point.y = y + scrollTop
+    bbox.nw = point.matrixTransform(matrix)
+    point.x += width
+    bbox.ne = point.matrixTransform(matrix)
+    point.y += height
+    bbox.se = point.matrixTransform(matrix)
+    point.x -= width
+    bbox.sw = point.matrixTransform(matrix)
+    point.y -= height / 2
+    bbox.w  = point.matrixTransform(matrix)
+    point.x += width
+    bbox.e = point.matrixTransform(matrix)
+    point.x -= width / 2
+    point.y -= height / 2
+    bbox.n = point.matrixTransform(matrix)
+    point.y += height
+    bbox.s = point.matrixTransform(matrix)
+
+    return bbox
+  }
+
+  return tip
+};
+
+},{}],2:[function(require,module,exports){
 var _ = require('underscore')
+  , tooltip = require('./d3-tip')
+
+var SCALE = {lock:0.35}
 
 module.exports = {
   draw: function(id, d, options){
@@ -11,13 +296,14 @@ module.exports = {
       ,scaleLegend: 1
       ,levels: 3
       ,maxValue: 0
+      ,minValue: 1
       ,radians: 2 * Math.PI
-      ,opacityArea: 0.5
       ,color: d3.scale.category10()
       ,fontSize: 10
     }, options)
 
     cfg.maxValue = Math.max(cfg.maxValue, d3.max(d, function(i){return d3.max(i.map(function(o){return o.value;}))}));
+    var graphSize = Math.min(cfg.w, cfg.h)
     var allAxis = (d[0].map(function(i, j){return i.axis}));
     var total = allAxis.length;
     var radius = cfg.scale*Math.min(cfg.w/2, cfg.h/2);
@@ -26,7 +312,9 @@ module.exports = {
 
     var axis = g.selectAll(".axis").data(allAxis).enter().append("g").attr("class", "axis");
     var dataValues = []
-      , handles, path, indicators
+      , locked = []
+      , handles, path, indicators, locks
+      , TIP = tooltip().attr('class', 'd3-tip').html('Click to Lock').offset([-5,0])
 
     var line = d3.svg.line().interpolate('cardinal-closed')
 
@@ -47,30 +335,52 @@ module.exports = {
     //~~ Draw Things
     
     function initPath() {
-      return g.append('path')
-                //.style('stroke', '#f00')
-                //.style('stroke-width', '5px')
-                 .style("fill", function(j, i){return cfg.color(0)})
-                 .style("fill-opacity", cfg.opacityArea)
+      return g.append('path').attr('class', 'area-path')
     }
 
     function initHandles() {
+      var hoverRadius = cfg.radius * 1.75
+
       var _g = g.selectAll('.nodes').data(d[0]).enter()
                   .append('g')
                   .attr('class', 'handle-group')
                   .on('mouseover', function() {
-                    d3.select(this)
-                        .select('.handle')
-                          .classed('hover', true)
-                            .transition().duration(600).ease('elastic')
-                              .attr('r', cfg.radius*1.75) })
-                  .on('mouseout', function() {
-                    d3.select(this)
-                        .select('.handle')
-                          .classed('hover', false)
-                          .transition().duration(500).ease('elastic')
-                            .attr('r', cfg.radius) })
+                    d3.select(this).select('.handle')
+                        .classed('hover', true)
+                        .transition().duration(600).ease('elastic')
+                          .attr('r', hoverRadius)
+                    d3.select(this).select('.lock')
+                        .classed('hover', true)
+                        .transition().duration(600).ease('elastic')
+                          .attr('r', hoverRadius) 
+                  }).on('mouseout', function() {
+                    d3.select(this).select('.handle')
+                        .classed('hover', false)
+                        .transition().duration(500).ease('elastic')
+                          .attr('r', cfg.radius) 
+                    d3.select(this).select('.lock')
+                        .classed('hover', false)
+                        .transition().duration(500).ease('elastic')
+                          .attr('r', cfg.radius/2)
+                  }).on('mousedown', function() {
+                    d3.select(this).select('.handle')
+                      .transition().duration(10)
+                        .attr('r', hoverRadius - 2)
+                  }).on('mouseup', function() {
+                    d3.select(this).select('.handle')
+                      .transition().duration(10)
+                        .attr('r', hoverRadius)
+                  })
 
+
+      _g.call(TIP)
+
+      locks = _g
+        .append('svg:circle')
+          .attr('r', cfg.radius/2)
+          .attr('cx', cx).attr('cy', cy)
+          .attr('class', 'lock')
+          .on('mouseover', hoverOn)
 
       handles = _g
         .append("svg:circle")
@@ -79,15 +389,17 @@ module.exports = {
           .attr("cx", cx).attr("cy", cy)
           .attr("data-id", function(j){return j.axis})
           .attr('class', 'handle')
-          .on('mouseover', function(){ console.log(d3.select(this));d3.select(this).transition().attr('r', cfg.radius*2) })
+          //.on('mouseover', function(){ d3.select(this).transition().attr('r', cfg.radius*2) })
 
       indicators = _g
         .append('svg:circle')
           .attr('r', cfg.radius*4)
           .attr("cx", cx).attr("cy", cy)
           .attr('class', 'indicator')
+          .attr('data-id', function(j){ return j.axis })
           .on('mouseover', hoverOn)
           .on('mouseout', hoverOff)
+          .on('click', toggleLock)
 
       indicators.call(d3.behavior.drag().on('drag', move))
 
@@ -109,6 +421,7 @@ module.exports = {
     function drawHandles() {
       handles.attr("cx", cx).attr("cy", cy)
       indicators.attr('cx', cx).attr('cy', cy)
+      locks.attr('cx', cx).attr('cy', cy)
     }
 
     function drawAxes() {
@@ -117,7 +430,7 @@ module.exports = {
           .attr("y1", cfg.h/2)
           .attr("x2", function(j, i){return horizontal(i, cfg.w/2, cfg.scale);})
           .attr("y2", function(j, i){return vertical(i, cfg.h/2, cfg.scale);})
-          .attr("class", "line").style("stroke", "#dddde2").style("stroke-width", "3px");
+          .attr("class", "axis")
     }
 
     function drawRings() {
@@ -128,7 +441,8 @@ module.exports = {
          .attr("y1", function(d, i){return vertical(i, levelScale);})
          .attr("x2", function(d, i){return horizontal(i+1, levelScale);})
          .attr("y2", function(d, i){return vertical(i+1, levelScale);})
-         .attr("class", "line").style("stroke", "#d9d9d9").style("stroke-width", "0.5px").attr("transform", "translate(" + (cfg.w/2-levelScale) + ", " + (cfg.h/2-levelScale) + ")");
+         .attr('class', function(d,i){ return 'ring ring'+i })
+         .attr("transform", "translate(" + (cfg.w/2-levelScale) + ", " + (cfg.h/2-levelScale) + ")");
       }
     }
 
@@ -179,9 +493,19 @@ module.exports = {
         newValue = ratio * oldData.value; 
       }
 
-      if (newValue < 0 || newValue > cfg.maxValue) {
+      var oldValue = d[0][oldData.order].value
+      d[0][oldData.order].value=newValue;
+
+      if (newValue < cfg.minValue || newValue > cfg.maxValue) {
         d3.event.preventDefault && d3.event.preventDefault()
         d3.event.stopPropagation && d3.event.stopPropagation()
+        return
+      }
+
+      if (! maintainArea()) {
+        d3.event.preventDefault && d3.event.preventDefault()
+        d3.event.stopPropagation && d3.event.stopPropagation()
+        console.log("NOOOOO")
         return
       }
       
@@ -189,32 +513,34 @@ module.exports = {
           .attr("cx", function(){return newX + 300 ;})
           .attr("cy", function(){return 300 - newY;});
 
-      var oldValue = d[0][oldData.order].value
-      d[0][oldData.order].value=newValue;
-
-      maintainArea()
-  
-      recalculatePoints();
+      recalculatePoints()
       drawPath()
       drawHandles()
 
+      // Debug display to ensure we're keeping area constant
       console.log(_.reduce(d[0], function(m,x,i){ return m+x.value }, 0))
 
       function maintainArea() {
         var shaveVal = (newValue - oldValue) / (d[0].length-1)
           , shaved = _.map(d[0], function(x){ return [x, x.value - shaveVal] })
-          , bads = _.filter(shaved, function(x){ return x[1] < 0 || x[1] > cfg.maxValue })
-          , toShave
+          , doShave = d[0]
+          , dontShave = _.filter(shaved, function(x){
+              return (x[1] < cfg.minValue || x[1] > cfg.maxValue) ||
+                     (x[0].order == oldData.order)
+            })
 
-        if (bads.length) {
-          toShave = _.difference(d[0], _.map(bads, _.first))
-          shaveVal = (newValue - oldValue) / (toShave.length - 1)
-        }
+        dontShave = _.uniq(dontShave.concat(_.map(locked, mkarr)))
 
-        _.each(toShave || d[0], function(x, i) {
-          if ((x.order != oldData.order))// && (!~ dontMove.indexOf[x]))
-            x.value -= shaveVal
-        })
+        doShave = _.difference(d[0], _.map(dontShave, _.first))
+        shaveVal = (newValue - oldValue) / doShave.length
+
+        //console.log("DOSHAVE", doShave)
+        if (!doShave.length)
+          return false;
+
+        _.each(doShave, function(x, i) { x.value -= shaveVal })
+
+        return true
       }
     }
 
@@ -227,8 +553,57 @@ module.exports = {
       dataValues[d[0].length] = dataValues[0]
     }
 
-    function hoverOn() { d3.select(this).classed('hover', true); return true }
-    function hoverOff() { d3.select(this).classed('hover', false); return true }
+    function hoverOn() {
+      d3.select(this).classed('hover', true)
+      //TIP.show()
+      return true
+    }
+
+    function hoverOff() {
+      d3.select(this).classed('hover', false)
+      //TIP.hide()
+      return true
+    }
+
+    function toggleLock() {
+      if (d3.event.defaultPrevented) return; // drag event
+
+      var id = this.attributes['data-id'].value
+        , dataObj = _.find(d[0], function(x){ return x.axis == id })
+        , isLocked = _.find(locked, function(x){ return x == dataObj })
+        , parent = d3.select(this.parentNode)
+
+      if (! isLocked) {
+        if (dataObj)
+          locked = _.uniq(locked.concat(dataObj));
+        else
+          throw "No axis found by the name " + id;
+
+        parent.selectAll('.handle, .indicator, .lock').classed('locked', true)
+        _showLockAnimation(parent, true)
+      } else {
+        locked = _.without(locked, dataObj)
+        parent.selectAll('.handle, .indicator, .lock').classed('locked', false)
+        _showLockAnimation(parent, false)
+      }
+    }
+
+    function _showLockAnimation(container, state) {
+      var indicator = container.select('.indicator')
+        , r = indicator.attr('r')|0
+
+      var smoke = container.append('svg:circle')
+        .attr('class', 'smoke-ring')
+        .attr('r', r+2)
+        .attr('cx', indicator.attr('cx'))
+        .attr('cy', indicator.attr('cy'))
+        .attr('opacity', 0.25)
+
+      smoke.transition()
+        .delay(50).duration(250).ease('ease-out-quart')
+          .attr('opacity', 0)
+          .attr('r', r + 10)
+    }
 
 
 
@@ -247,32 +622,36 @@ module.exports = {
     function gte(x,y) { return x >= y }
     function lt(x,y) { return x < y }
     function gt(x,y) { return x > y }
+    function mkarr(x) { return [x] }
 
     function cx(j, i){ return horizontal(i, cfg.w/2, (Math.max(j.value, 0)/cfg.maxValue)*cfg.scale); }
     function cy(j, i){ return vertical(i, cfg.h/2, (Math.max(j.value, 0)/cfg.maxValue)*cfg.scale); }
-
   }
 };
 
-},{"underscore":3}],2:[function(require,module,exports){
+},{"./d3-tip":1,"underscore":4}],3:[function(require,module,exports){
 var RadarChart = require('./radar-chart')
 
 var d = [
   [
-    {axis: "strength", value: 4,        order:0}, 
-    {axis: "intelligence", value: 1,    order:1}, 
-    {axis: "dexterity", value: 4,       order:2},  
-    {axis: "luck", value: 10,           order:3},
-    {axis: "azole", value: 20,          order:4},
-    {axis: "shiner", value: 6,          order:5},
-    {axis: "hund", value: 9,            order:6}
+    {axis: "strength",      value: 4,   order:0}, 
+    {axis: "intelligence",  value: 5,   order:1}, 
+    {axis: "dexterity",     value: 8,   order:2},  
+    {axis: "luck",          value: 10,  order:3},
+    {axis: "azole",         value: 20,  order:4},
+    {axis: "foo",           value: 9,   order:5},
+    {axis: "bar",           value: 17,  order:6},
+    //{axis: "baz",           value: 10,  order:7},
+    //{axis: "foz",           value: 13,  order:8},
+    //{axis: "chicken",       value: 6,   order:9},
+    //{axis: "steak",         value: 34,  order:10}
   ]
 ]
 
 RadarChart.draw('#board', d)
 
 
-},{"./radar-chart":1}],3:[function(require,module,exports){
+},{"./radar-chart":2}],4:[function(require,module,exports){
 //     Underscore.js 1.5.2
 //     http://underscorejs.org
 //     (c) 2009-2013 Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
@@ -1550,5 +1929,5 @@ RadarChart.draw('#board', d)
 
 }).call(this);
 
-},{}]},{},[1,2])
+},{}]},{},[1,2,3])
 ;

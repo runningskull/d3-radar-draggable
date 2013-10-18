@@ -21,13 +21,22 @@
                 padding:        30px;
             }
 
-            .handle, .indicator {
-                fill: #1f77b4;
+            .handle-group {
                 cursor: pointer;
             }
 
             .handle {
+                fill: #1f77b4;
+                stroke: none;
                 fill-opacity: 0.9;
+            }
+
+            .handle.locked {
+                opacity: 0;
+            }
+
+            .handle.locked.hover {
+                opacity: 1;
             }
 
             .handle.hover {
@@ -37,6 +46,7 @@
             }
 
             .indicator {
+                fill: #1f77b4;
                 fill-opacity: 0;
                 stroke-opacity: 0;
             }
@@ -48,6 +58,103 @@
                 stroke: #1f77b4;
                 stroke-opacity: 0.2;
                 stroke-width: 1px;
+            }
+
+            .area-path {
+                fill: #1f77b4;
+                fill-opacity: 0.5;
+            }
+
+            .axis {
+                stroke: #e0e0e5;
+                stroke-width: 3px;
+            }
+
+            .ring {
+                stroke: #dadada;
+                stroke-width: 0.5px;
+            }
+
+            .lock {
+                opacity: 0;
+                stroke: #0f67a4;
+                stroke-width: 3px;
+                fill: none;
+            }
+
+            .lock.locked {
+                opacity: 0.6;
+            }
+            
+            .lock.locked.hover {
+                opacity: 0.5;
+            }
+
+            .smoke-ring {
+                stroke: #1f77b4;
+                stroke-width: 2px;
+                fill: none;
+            }
+
+            /* .ring.ring1 { stroke: red; } */
+            /* .ring.ring2 { stroke: blue; } */
+        </style>
+
+        <style id="style-tooltip">
+            .d3-tip {
+              font-family: Helvetica, sans-serif;
+              font-size: 10px;
+              letter-spacing: 1px;
+              line-height: 1;
+              padding: 6px 8px;
+              background: #333;
+              color: #fff;
+              border-radius: 5px;
+            }
+
+            /* Creates a small triangle extender for the tooltip */
+            .d3-tip:after {
+              box-sizing: border-box;
+              display: inline;
+              font-size: 8px;
+              width: 100%;
+              line-height: 1;
+              color: #333;
+              position: absolute;
+            }
+
+            /* Nrthward tooltips */
+            .d3-tip.n:after {
+              content: "\25BC";
+              margin: 0 0 0 0;
+              top: 100%;
+              left: 0;
+              text-align: center;
+            }
+
+            /* Eastward tooltips */
+            .d3-tip.e:after {
+              content: "\25C0";
+              margin: -4px 0 0 0;
+              top: 50%;
+              left: -8px;
+            }
+
+            /* Southward tooltips */
+            .d3-tip.s:after {
+              content: "\25B2";
+              margin: 0 0 1px 0;
+              top: -8px;
+              left: 0;
+              text-align: center;
+            }
+
+            /* Westward tooltips */
+            .d3-tip.w:after {
+              content: "\25B6";
+              margin: -4px 0 0 -1px;
+              top: 50%;
+              left: 100%;
             }
         </style>
     </head>
